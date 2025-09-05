@@ -6,7 +6,9 @@ import com.ng.exception.ResourceNotFound;
 import com.ng.repository.EmployeeRepository;
 import com.ng.repository.UserRepository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,17 +32,42 @@ public class EmployeeController
 	@Autowired
 	private UserRepository userRepository;
 
-	@GetMapping("/")
-	public String login()
+//	@GetMapping("/login")
+//	public ResponseEntity<Map<String, String>> login()
+//	{
+//		Map<String, String> response = new HashMap<>();
+//		response.put("message", "Login successful");
+//		return ResponseEntity.ok(response);
+//	}
+	@PostMapping("/login")
+	public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials)
 	{
-		return "Authenticate Successfully";
+		String username = credentials.get("username");
+		String password = credentials.get("password");
+
+		Map<String, String> response = new HashMap<>();
+
+		Optional<MyUser> userOpt = userRepository.findByusername(username);
+		if (userOpt.isPresent())
+		{
+			MyUser user = userOpt.get();
+			if (passwordEncoder.matches(password, user.getPassword()))
+			{
+				response.put("message", "Login successful");
+				return ResponseEntity.ok(response);
+			}
+		}
+
+		response.put("message", "Username or password not found");
+		return ResponseEntity.status(404).body(response);
 	}
 
 	@PostMapping("/signup")
 	public ResponseEntity<MyUser> signup(@RequestBody MyUser user)
 	{
+		System.out.println("roles: " + user.getRoles());
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
-		user.setRoles("NORMAL"); // default role
+		user.setRoles(user.getRoles());
 		MyUser savedUser = userRepository.save(user);
 		return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
 	}
@@ -90,7 +117,8 @@ public class EmployeeController
 			Employee employee = optionalEmployee.get();
 			employeeRepository.deleteById(id);
 			return ResponseEntity.ok(employee);
-		} else
+		} 
+		else
 		{
 			return ResponseEntity.notFound().build();
 		}
