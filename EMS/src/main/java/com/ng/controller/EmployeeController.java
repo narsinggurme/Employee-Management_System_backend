@@ -32,13 +32,6 @@ public class EmployeeController
 	@Autowired
 	private UserRepository userRepository;
 
-//	@GetMapping("/login")
-//	public ResponseEntity<Map<String, String>> login()
-//	{
-//		Map<String, String> response = new HashMap<>();
-//		response.put("message", "Login successful");
-//		return ResponseEntity.ok(response);
-//	}
 	@PostMapping("/login")
 	public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials)
 	{
@@ -117,10 +110,50 @@ public class EmployeeController
 			Employee employee = optionalEmployee.get();
 			employeeRepository.deleteById(id);
 			return ResponseEntity.ok(employee);
+		} else
+		{
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@PostMapping("/forgot-password/check-username")
+	public ResponseEntity<Map<String, String>> checkUserName(@RequestBody Map<String, String> request)
+	{
+		String username = request.get("username");
+		Map<String, String> response = new HashMap<String, String>();
+		Optional<MyUser> userOpt = userRepository.findByusername(username);
+		if (userOpt.isPresent())
+		{
+			response.put("message", "username is exist");
+			return ResponseEntity.ok(response);
 		} 
 		else
 		{
-			return ResponseEntity.notFound().build();
+			response.put("message", "username is not found");
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+		}
+	}
+
+	@PostMapping("/forgot-password/reset")
+	public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> request)
+	{
+		String username = request.get("username");
+		String newPassword = request.get("password");
+		Map<String, String> response = new HashMap<String, String>();
+		Optional<MyUser> userOpt = userRepository.findByusername(username);
+		if (userOpt.isPresent())
+		{
+			MyUser user = userOpt.get();
+			user.setPassword(passwordEncoder.encode(newPassword));
+			userRepository.save(user);
+			response.put("message", "Password updated successfully");
+			return ResponseEntity.ok(response);
+		}
+		else
+		{
+			response.put("message", "username is not found");
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 		}
 	}
 

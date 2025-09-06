@@ -28,29 +28,26 @@ public class MySecirutyConfig
 	private UserRepository repository;
 
 	@Bean
-	public UserDetailsService userDetailsService() {
-	    return username -> repository.findByusername(username)
-	            .map(user -> {
-	                System.out.println(">>> Username from DB: " + user.getUsername());
+	public UserDetailsService userDetailsService()
+	{
+		return username -> repository.findByusername(username).map(user ->
+		{
+			System.out.println(">>> Username from DB: " + user.getUsername());
 
-	                return org.springframework.security.core.userdetails.User
-	                        .withUsername(user.getUsername())
-	                        .password(user.getPassword())
-	                        .roles(user.getRoles()) 
-	                        .build();
-	            })
-	            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+			return org.springframework.security.core.userdetails.User.withUsername(user.getUsername())
+					.password(user.getPassword()).roles(user.getRoles()).build();
+		}).orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 	}
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
 	{
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.authorizeHttpRequests(auth -> auth
-					    .requestMatchers("/api/v1/signup", "/api/v1/login").permitAll()
-					    .requestMatchers("/api/v1/employees").hasRole("ADMIN")
-						.requestMatchers("/api/v1/employees/**").authenticated() 
-				).httpBasic(httpBasic ->
+				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/signup", 
+						"/api/v1/login", "/api/v1/forgot-password/check-username", "/api/v1/forgot-password/reset").permitAll()
+						.requestMatchers("/api/v1/employees").hasRole("ADMIN").requestMatchers("/api/v1/employees/**")
+						.authenticated())
+				.httpBasic(httpBasic ->
 				{
 				});
 		return http.build();
@@ -80,9 +77,8 @@ public class MySecirutyConfig
 	public AuthenticationManager authManager(HttpSecurity http) throws Exception
 	{
 		AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-		authBuilder.userDetailsService(userDetailsService()).passwordEncoder(encoder()); 
-		return authBuilder.build(); 
+		authBuilder.userDetailsService(userDetailsService()).passwordEncoder(encoder());
+		return authBuilder.build();
 	}
-
 
 }
