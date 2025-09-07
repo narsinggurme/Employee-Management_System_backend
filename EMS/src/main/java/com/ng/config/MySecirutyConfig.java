@@ -9,47 +9,54 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.ng.repository.UserRepository;
+import com.ng.service.MyUserDetailsService;
 
 @Configuration
 @EnableWebSecurity
 public class MySecirutyConfig
 {
 	@Autowired
-	private UserRepository repository;
+	private JwtFilter jwtFilter;
 
-	@Bean
-	public UserDetailsService userDetailsService()
-	{
-		return username -> repository.findByusername(username).map(user ->
-		{
-			System.out.println(">>> Username from DB: " + user.getUsername());
+	@Autowired
+	private MyUserDetailsService myUserDetailsService;
 
-			return org.springframework.security.core.userdetails.User.withUsername(user.getUsername())
-					.password(user.getPassword()).roles(user.getRoles()).build();
-		}).orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-	}
+//	@Bean
+//	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
+//	{
+//		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
+//				.authorizeHttpRequests(auth -> auth
+//						.requestMatchers("/api/v1/signup", "/api/v1/login", "/api/v1/forgot-password/check-username",
+//								"/api/v1/forgot-password/reset")
+//						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN")
+//						.requestMatchers("/api/v1/employees/**").authenticated())
+//				.httpBasic(httpBasic ->
+//				{
+//				});
+//		return http.build();
+//	}
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
 	{
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/signup", 
-						"/api/v1/login", "/api/v1/forgot-password/check-username", "/api/v1/forgot-password/reset").permitAll()
-						.requestMatchers("/api/v1/employees").hasRole("ADMIN").requestMatchers("/api/v1/employees/**")
-						.authenticated())
-				.httpBasic(httpBasic ->
-				{
-				});
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/api/v1/signup", "/api/v1/login", "/api/v1/forgot-password/check-username",
+								"/api/v1/forgot-password/reset")
+						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN")
+						.requestMatchers("/api/v1/employees/**").authenticated())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
 		return http.build();
 	}
 
@@ -77,7 +84,7 @@ public class MySecirutyConfig
 	public AuthenticationManager authManager(HttpSecurity http) throws Exception
 	{
 		AuthenticationManagerBuilder authBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-		authBuilder.userDetailsService(userDetailsService()).passwordEncoder(encoder());
+		authBuilder.userDetailsService(myUserDetailsService).passwordEncoder(encoder());
 		return authBuilder.build();
 	}
 

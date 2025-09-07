@@ -1,5 +1,6 @@
 package com.ng.controller;
 
+import com.ng.config.JwtUtil;
 import com.ng.entity.Employee;
 import com.ng.entity.MyUser;
 import com.ng.exception.ResourceNotFound;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:4200")
 public class EmployeeController
 {
+	@Autowired
+	private JwtUtil jwtUtil;
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
@@ -32,27 +35,49 @@ public class EmployeeController
 	@Autowired
 	private UserRepository userRepository;
 
+//	@PostMapping("/login")
+//	public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials)
+//	{
+//		String username = credentials.get("username");
+//		String password = credentials.get("password");
+//
+//		Map<String, String> response = new HashMap<>();
+//
+//		Optional<MyUser> userOpt = userRepository.findByusername(username);
+//		if (userOpt.isPresent())
+//		{
+//			MyUser user = userOpt.get();
+//			if (passwordEncoder.matches(password, user.getPassword()))
+//			{
+//				response.put("message", "Login successful");
+//				return ResponseEntity.ok(response);
+//			}
+//		}
+//
+//		response.put("message", "Username or password not found");
+//		return ResponseEntity.status(404).body(response);
+//	}
 	@PostMapping("/login")
-	public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials)
-	{
-		String username = credentials.get("username");
-		String password = credentials.get("password");
+	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
+	    String username = credentials.get("username");
+	    String password = credentials.get("password");
 
-		Map<String, String> response = new HashMap<>();
+	    Optional<MyUser> userOpt = userRepository.findByusername(username);
+	    if (userOpt.isPresent()) {
+	        MyUser user = userOpt.get();
+	        if (passwordEncoder.matches(password, user.getPassword())) {
+	            String token = jwtUtil.generateToken(username);
 
-		Optional<MyUser> userOpt = userRepository.findByusername(username);
-		if (userOpt.isPresent())
-		{
-			MyUser user = userOpt.get();
-			if (passwordEncoder.matches(password, user.getPassword()))
-			{
-				response.put("message", "Login successful");
-				return ResponseEntity.ok(response);
-			}
-		}
-
-		response.put("message", "Username or password not found");
-		return ResponseEntity.status(404).body(response);
+	            Map<String, Object> response = new HashMap<>();
+	            response.put("token", token);
+	            response.put("username", user.getUsername());
+	            response.put("roles", user.getRoles()); 
+	            response.put("expiresIn", jwtUtil.getExpiration(token)); 
+	            return ResponseEntity.ok(response);
+	        }
+	    }
+	    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+	            .body(Map.of("message", "Invalid credentials"));
 	}
 
 	@PostMapping("/signup")
