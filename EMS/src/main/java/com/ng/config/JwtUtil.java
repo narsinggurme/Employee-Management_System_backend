@@ -14,14 +14,13 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtUtil
 {
-
 	private final String SECRET_KEY = "NarsingSuperSecretKeyForJwtMustBeAtLeast32Bytes!";
 	private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
 	public String generateToken(String username)
 	{
 		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
-				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
+				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) 
 				.signWith(key, SignatureAlgorithm.HS256).compact();
 	}
 
@@ -46,8 +45,7 @@ public class JwtUtil
 
 	public Date getExpiration(String token)
 	{
-		Claims claims = Jwts.parserBuilder().setSigningKey(SECRET_KEY.getBytes()).build().parseClaimsJws(token)
-				.getBody();
+		Claims claims = Jwts.parserBuilder().setSigningKey(SECRET_KEY.getBytes()).build().parseClaimsJws(token).getBody();
 		return claims.getExpiration();
 	}
 }
