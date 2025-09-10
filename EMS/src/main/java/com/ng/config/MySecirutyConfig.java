@@ -30,21 +30,6 @@ public class MySecirutyConfig
 	@Autowired
 	private MyUserDetailsService myUserDetailsService;
 
-//	@Bean
-//	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
-//	{
-//		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//				.authorizeHttpRequests(auth -> auth
-//						.requestMatchers("/api/v1/signup", "/api/v1/login", "/api/v1/forgot-password/check-username",
-//								"/api/v1/forgot-password/reset")
-//						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN")
-//						.requestMatchers("/api/v1/employees/**").authenticated())
-//				.httpBasic(httpBasic ->
-//				{
-//				});
-//		return http.build();
-//	}
-
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception
 	{
@@ -53,7 +38,7 @@ public class MySecirutyConfig
 						.requestMatchers("/api/v1/signup", "/api/v1/login", "/api/v1/forgot-password/check-username","/api/v1/refresh",
 								"/api/v1/forgot-password/reset")
 						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN")
-						.requestMatchers("/api/v1/employees/**").authenticated())
+						.requestMatchers("/api/v1/**").authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
