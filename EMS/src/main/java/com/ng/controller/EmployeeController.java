@@ -35,49 +35,57 @@ public class EmployeeController
 	@Autowired
 	private UserRepository userRepository;
 
-//	@PostMapping("/login")
-//	public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> credentials)
-//	{
-//		String username = credentials.get("username");
-//		String password = credentials.get("password");
-//
-//		Map<String, String> response = new HashMap<>();
-//
-//		Optional<MyUser> userOpt = userRepository.findByusername(username);
-//		if (userOpt.isPresent())
-//		{
-//			MyUser user = userOpt.get();
-//			if (passwordEncoder.matches(password, user.getPassword()))
-//			{
-//				response.put("message", "Login successful");
-//				return ResponseEntity.ok(response);
-//			}
-//		}
-//
-//		response.put("message", "Username or password not found");
-//		return ResponseEntity.status(404).body(response);
-//	}
 	@PostMapping("/login")
-	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials) {
-	    String username = credentials.get("username");
-	    String password = credentials.get("password");
+	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials)
+	{
+		String username = credentials.get("username");
+		String password = credentials.get("password");
 
-	    Optional<MyUser> userOpt = userRepository.findByusername(username);
-	    if (userOpt.isPresent()) {
-	        MyUser user = userOpt.get();
-	        if (passwordEncoder.matches(password, user.getPassword())) {
-	            String token = jwtUtil.generateToken(username);
+		Optional<MyUser> userOpt = userRepository.findByusername(username);
+		if (userOpt.isPresent())
+		{
+			MyUser user = userOpt.get();
+			if (passwordEncoder.matches(password, user.getPassword()))
+			{
+				String accessToken = jwtUtil.generateAccessToken(username);
+				String refreshToken = jwtUtil.generateRefreshToken(username);
 
-	            Map<String, Object> response = new HashMap<>();
-	            response.put("token", token);
-	            response.put("username", user.getUsername());
-	            response.put("roles", user.getRoles()); 
-	            response.put("expiresIn", jwtUtil.getExpiration(token)); 
-	            return ResponseEntity.ok(response);
-	        }
-	    }
-	    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	            .body(Map.of("message", "Invalid credentials"));
+				Map<String, Object> response = new HashMap<>();
+				response.put("accessToken", accessToken);
+				response.put("refreshToken", refreshToken);
+				response.put("username", user.getUsername());
+				response.put("roles", user.getRoles());
+				response.put("expiresIn", jwtUtil.getExpiration(accessToken));
+				return ResponseEntity.ok(response);
+			}
+		}
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+	}
+
+	@PostMapping("/refresh")
+	public ResponseEntity<Map<String, Object>> refresh(@RequestBody Map<String, String> request)
+	{
+		String refreshToken = request.get("refreshToken");
+
+		try
+		{
+			String username = jwtUtil.extractUsername(refreshToken);
+
+			if (!jwtUtil.isTokenExpired(refreshToken))
+			{
+				String newAccessToken = jwtUtil.generateAccessToken(username);
+
+				return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
+			} else
+			{
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(Map.of("message", "Refresh token expired, please login again"));
+			}
+
+		} catch (Exception e)
+		{
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid refresh token"));
+		}
 	}
 
 	@PostMapping("/signup")
@@ -151,8 +159,7 @@ public class EmployeeController
 		{
 			response.put("message", "username is exist");
 			return ResponseEntity.ok(response);
-		} 
-		else
+		} else
 		{
 			response.put("message", "username is not found");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
@@ -174,7 +181,7 @@ public class EmployeeController
 			userRepository.save(user);
 			response.put("message", "Password updated successfully");
 			return ResponseEntity.ok(response);
-		}
+		} 
 		else
 		{
 			response.put("message", "username is not found");

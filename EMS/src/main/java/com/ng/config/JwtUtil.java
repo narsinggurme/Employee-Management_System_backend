@@ -17,12 +17,31 @@ public class JwtUtil
 	private final String SECRET_KEY = "NarsingSuperSecretKeyForJwtMustBeAtLeast32Bytes!";
 	private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
-	public String generateToken(String username)
-	{
-		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
-				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) 
-				.signWith(key, SignatureAlgorithm.HS256).compact();
-	}
+//	public String generateToken(String username)
+//	{
+//		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
+//				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) 
+//				.signWith(key, SignatureAlgorithm.HS256).compact();
+//	}
+	 public String generateAccessToken(String username) {
+	        return Jwts.builder()
+	                .setSubject(username)
+	                .setIssuedAt(new Date())
+	                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15)) // 15 min
+	                .signWith(key, SignatureAlgorithm.HS256)
+	                .compact();
+	    }
+
+	    // Refresh Token: longer-lived (7 days)
+	    public String generateRefreshToken(String username) {
+	        return Jwts.builder()
+	                .setSubject(username)
+	                .setIssuedAt(new Date())
+	                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 7 days
+	                .signWith(key, SignatureAlgorithm.HS256)
+	                .compact();
+	    }
+
 
 	public String extractUsername(String token)
 	{
@@ -36,7 +55,7 @@ public class JwtUtil
 	}
 
 
-	private boolean isTokenExpired(String token)
+	public boolean isTokenExpired(String token)
 	{
 		Date exp = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token)
 				.getBody().getExpiration();
