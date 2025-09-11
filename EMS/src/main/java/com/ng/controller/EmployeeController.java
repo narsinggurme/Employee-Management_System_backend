@@ -6,6 +6,7 @@ import com.ng.entity.MyUser;
 import com.ng.exception.ResourceNotFound;
 import com.ng.repository.EmployeeRepository;
 import com.ng.repository.UserRepository;
+import com.ng.service.UserSessionService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +36,9 @@ public class EmployeeController
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private UserSessionService sessionService;
+
 	@PostMapping("/login")
 	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials)
 	{
@@ -49,6 +53,13 @@ public class EmployeeController
 			{
 				String accessToken = jwtUtil.generateAccessToken(username);
 				String refreshToken = jwtUtil.generateRefreshToken(username);
+				boolean created = sessionService.createNewSession(username, refreshToken);
+
+				if (!created)
+				{
+					return ResponseEntity.status(HttpStatus.CONFLICT) // 409 Conflict
+							.body(Map.of("message", "User already logged in from another device"));
+				}
 
 				Map<String, Object> response = new HashMap<>();
 				response.put("accessToken", accessToken);
@@ -69,14 +80,24 @@ public class EmployeeController
 
 		try
 		{
+			if (!sessionService.validateRefreshToken(refreshToken))
+			{
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(Map.of("message", "Invalid session, please login again"));
+			}
+
 			String username = jwtUtil.extractUsername(refreshToken);
 
 			if (!jwtUtil.isTokenExpired(refreshToken))
 			{
 				String newAccessToken = jwtUtil.generateAccessToken(username);
+				String newRefreshToken = jwtUtil.generateRefreshToken(username);
 
-				return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
-			} else
+				sessionService.createNewSession(username, newRefreshToken);
+
+				return ResponseEntity.ok(Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken));
+			}
+			else
 			{
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 						.body(Map.of("message", "Refresh token expired, please login again"));
@@ -86,6 +107,15 @@ public class EmployeeController
 		{
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid refresh token"));
 		}
+	}
+
+	@PostMapping("/logout")
+	public ResponseEntity<Map<String, String>> logOut(@RequestBody Map<String, String> request)
+	{
+		String username = request.get("username");
+		sessionService.removeSession(username);
+
+		return ResponseEntity.ok(Map.of("message", "Logout successfully"));
 	}
 
 	@PostMapping("/signup")
@@ -181,8 +211,7 @@ public class EmployeeController
 			userRepository.save(user);
 			response.put("message", "Password updated successfully");
 			return ResponseEntity.ok(response);
-		} 
-		else
+		} else
 		{
 			response.put("message", "username is not found");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
