@@ -17,35 +17,46 @@ public class UserSessionService
 	@Autowired
 	private UserSessionRepository userSessionRepository;
 
-//	public void createOrUpdateSession(String username, String refreshToken)
-//	{
-//		userSessionRepository.deleteByUsername(username);
-//
-//		UserSession session = new UserSession();
-//		session.setUsername(username);
-//		session.setRefreshToken(refreshToken);
-//		session.setCreatedAt(LocalDateTime.now());
-//
-//		userSessionRepository.save(session);
-//	}
-//	
-	  @Transactional
-	    public boolean createNewSession(String username, String refreshToken) {
-	        Optional<UserSession> existing = userSessionRepository.findByUsername(username);
+	@Transactional
+	public void createOrUpdateSession(String username, String refreshToken)
+	{
+		Optional<UserSession> sessionOpt = userSessionRepository.findByUsername(username);
+		UserSession session;
+		if (sessionOpt.isPresent())
+		{
+			session = sessionOpt.get();
+			session.setRefreshToken(refreshToken);
+		} else
+		{
+			session = new UserSession();
+			session.setUsername(username);
+			session.setRefreshToken(refreshToken);
+			session.setCreatedAt(LocalDateTime.now());
+		}
+		session.setLastActivity(LocalDateTime.now());
+		userSessionRepository.save(session);
+	}
 
-	        if (existing.isPresent()) {
-	            // User already logged in
-	            return false;
-	        }
-
-	        UserSession session = new UserSession();
-	        session.setUsername(username);
-	        session.setRefreshToken(refreshToken);
-	        session.setCreatedAt(LocalDateTime.now());
-	        userSessionRepository.save(session);
-
-	        return true;
-	    }
+	public boolean isSessionActive(String refreshToken, int inactivityMinutes)
+	{
+		Optional<UserSession> sessionOpt = userSessionRepository.findByRefreshToken(refreshToken);
+		if (sessionOpt.isPresent())
+		{
+			UserSession session = sessionOpt.get();
+			LocalDateTime now = LocalDateTime.now();
+			if (session.getLastActivity().plusMinutes(inactivityMinutes).isAfter(now))
+			{
+				session.setLastActivity(now);
+				userSessionRepository.save(session);
+				return true;
+			} else
+			{
+				userSessionRepository.delete(session);
+				return false;
+			}
+		}
+		return false;
+	}
 
 	public boolean validateRefreshToken(String refreshToken)
 	{
@@ -57,4 +68,5 @@ public class UserSessionService
 	{
 		userSessionRepository.deleteByUsername(username);
 	}
+
 }

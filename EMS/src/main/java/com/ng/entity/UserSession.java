@@ -16,13 +16,12 @@ public class UserSession
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-
 	private String username;
-
 	@Column(length = 1000)
 	private String refreshToken;
-
 	private LocalDateTime createdAt;
+    private LocalDateTime lastActivity; // Track last user activity
+
 
 	public Long getId()
 	{
@@ -62,5 +61,14 @@ public class UserSession
 	public void setCreatedAt(LocalDateTime createdAt)
 	{
 		this.createdAt = createdAt;
+	}
+	public LocalDateTime getLastActivity()
+	{
+		return lastActivity;
+	}
+
+	public void setLastActivity(LocalDateTime lastActivity)
+	{
+		this.lastActivity = lastActivity;
 	}
 }
