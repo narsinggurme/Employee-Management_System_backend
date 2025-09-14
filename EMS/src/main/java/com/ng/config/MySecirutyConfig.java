@@ -36,7 +36,7 @@ public class MySecirutyConfig
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/v1/signup", "/api/v1/login", "/api/v1/forgot-password/check-username","/api/v1/refresh","/api/v1/logout",
-								"/api/v1/forgot-password/reset")
+								"/api/v1/forgot-password/reset", "/api/v1/forgot-password/send-link")
 						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN")
 						.requestMatchers("/api/v1/**").authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
