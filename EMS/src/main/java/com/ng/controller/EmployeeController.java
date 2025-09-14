@@ -1,11 +1,16 @@
 package com.ng.controller;
 
 import com.ng.config.JwtUtil;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ng.entity.Employee;
 import com.ng.entity.MyUser;
 import com.ng.exception.ResourceNotFound;
 import com.ng.repository.EmployeeRepository;
 import com.ng.repository.UserRepository;
+import com.ng.service.EmailService;
 import com.ng.service.UserSessionService;
 
 import jakarta.servlet.http.Cookie;
@@ -28,6 +33,8 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:4200")
 public class EmployeeController
 {
+	private static final Logger log = LoggerFactory.getLogger(EmployeeController.class);
+
 	@Autowired
 	private JwtUtil jwtUtil;
 
@@ -43,145 +50,96 @@ public class EmployeeController
 	@Autowired
 	private UserSessionService sessionService;
 
-//	@PostMapping("/login")
-//	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials)
-//	{
-//		String username = credentials.get("username");
-//		String password = credentials.get("password");
-//
-//		Optional<MyUser> userOpt = userRepository.findByusername(username);
-//		if (userOpt.isPresent())
-//		{
-//			MyUser user = userOpt.get();
-//			if (passwordEncoder.matches(password, user.getPassword()))
-//			{
-//				String accessToken = jwtUtil.generateAccessToken(username);
-//				String refreshToken = jwtUtil.generateRefreshToken(username);
-//				boolean created = sessionService.createNewSession(username, refreshToken);
-//
-//				if (!created)
-//				{
-//					return ResponseEntity.status(HttpStatus.CONFLICT) 
-//							.body(Map.of("message", "User already logged in from another device"));
-//				}
-//
-//				Map<String, Object> response = new HashMap<>();
-//				response.put("accessToken", accessToken);
-//				response.put("refreshToken", refreshToken);
-//				response.put("username", user.getUsername());
-//				response.put("roles", user.getRoles());
-//				response.put("expiresIn", jwtUtil.getExpiration(accessToken));
-//				return ResponseEntity.ok(response);
-//			}
-//		}
-//		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
-//	}
-	
+	@Autowired
+	private EmailService emailService;
+
 	@PostMapping("/login")
-	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials, HttpServletResponse response) {
-	    String username = credentials.get("username");
-	    String password = credentials.get("password");
+	public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> credentials,
+			HttpServletResponse response)
+	{
+		String username = credentials.get("username");
+		String password = credentials.get("password");
+		log.info("Login attempt for username: {}", username);
 
-	    Optional<MyUser> userOpt = userRepository.findByusername(username);
-	    if (userOpt.isPresent()) {
-	        MyUser user = userOpt.get();
-	        if (passwordEncoder.matches(password, user.getPassword())) {
+		Optional<MyUser> userOpt = userRepository.findByusername(username);
+		if (userOpt.isPresent())
+		{
+			MyUser user = userOpt.get();
+			if (passwordEncoder.matches(password, user.getPassword()))
+			{
+				log.info("Login successful for user: {}", username);
+				String accessToken = jwtUtil.generateAccessToken(username);
+				String refreshToken = jwtUtil.generateRefreshToken(username);
 
-	            String accessToken = jwtUtil.generateAccessToken(username);
-	            String refreshToken = jwtUtil.generateRefreshToken(username);
+				sessionService.createOrUpdateSession(username, refreshToken);
 
-	            sessionService.createOrUpdateSession(username, refreshToken);
+				Cookie cookie = new Cookie("refreshToken", refreshToken);
+				cookie.setHttpOnly(true);
+				cookie.setSecure(true);
+				cookie.setPath("/");
+				cookie.setMaxAge(60 * 60 * 24);
+				response.addCookie(cookie);
 
-	            Cookie cookie = new Cookie("refreshToken", refreshToken);
-	            cookie.setHttpOnly(true);
-	            cookie.setSecure(true); 
-	            cookie.setPath("/"); 
-	            cookie.setMaxAge(60 * 60 * 24); 
-	            response.addCookie(cookie);
+				Map<String, Object> resp = new HashMap<>();
+				resp.put("accessToken", accessToken);
+				resp.put("refreshToken", refreshToken);
+				resp.put("username", user.getUsername());
+				resp.put("roles", user.getRoles());
+				resp.put("expiresIn", jwtUtil.getExpiration(accessToken));
 
-	            Map<String, Object> resp = new HashMap<>();
-	            resp.put("accessToken", accessToken);
-	            resp.put("refreshToken", refreshToken);
-	            resp.put("username", user.getUsername());
-	            resp.put("roles", user.getRoles());
-	            resp.put("expiresIn", jwtUtil.getExpiration(accessToken));
-
-	            return ResponseEntity.ok(resp);
-	        }
-	    }
-	    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+				return ResponseEntity.ok(resp);
+			} else
+			{
+				log.warn("Invalid password for user: {}", username);
+			}
+		} else
+		{
+			log.warn("User not found: {}", username);
+		}
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
 	}
 
-
-//	@PostMapping("/refresh")
-//	public ResponseEntity<Map<String, Object>> refresh(@RequestBody Map<String, String> request)
-//	{
-//		String refreshToken = request.get("refreshToken");
-//
-//		try
-//		{
-//			if (!sessionService.validateRefreshToken(refreshToken))
-//			{
-//				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//						.body(Map.of("message", "Invalid session, please login again"));
-//			}
-//
-//			String username = jwtUtil.extractUsername(refreshToken);
-//
-//			if (!jwtUtil.isTokenExpired(refreshToken))
-//			{
-//				String newAccessToken = jwtUtil.generateAccessToken(username);
-//				String newRefreshToken = jwtUtil.generateRefreshToken(username);
-//
-//				sessionService.createNewSession(username, newRefreshToken);
-//
-//				return ResponseEntity.ok(Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken));
-//			}
-//			else
-//			{
-//				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-//						.body(Map.of("message", "Refresh token expired, please login again"));
-//			}
-//
-//		} catch (Exception e)
-//		{
-//			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid refresh token"));
-//		}
-//	}
-	
 	@PostMapping("/refresh")
-	public ResponseEntity<Map<String, Object>> refresh(HttpServletRequest request, HttpServletResponse response) {
-	    Cookie[] cookies = request.getCookies();
-	    String refreshToken = null;
-	    if (cookies != null) {
-	        for (Cookie cookie : cookies) {
-	            if ("refreshToken".equals(cookie.getName())) {
-	                refreshToken = cookie.getValue();
-	            }
-	        }
-	    }
+	public ResponseEntity<Map<String, Object>> refresh(HttpServletRequest request, HttpServletResponse response)
+	{
+		Cookie[] cookies = request.getCookies();
+		String refreshToken = null;
+		if (cookies != null)
+		{
+			for (Cookie cookie : cookies)
+			{
+				if ("refreshToken".equals(cookie.getName()))
+				{
+					refreshToken = cookie.getValue();
+				}
+			}
+		}
+		else
+		{
+			log.info("Invalid cookies..");
+		}
 
-	    if (refreshToken == null || !sessionService.isSessionActive(refreshToken, 10)) { 
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	                .body(Map.of("message", "Session expired or inactive. Please login again."));
-	    }
+		if (refreshToken == null || !sessionService.isSessionActive(refreshToken, 10))
+		{
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+					.body(Map.of("message", "Session expired or inactive. Please login again."));
+		}
 
-	    String username = jwtUtil.extractUsername(refreshToken);
-	    String newAccessToken = jwtUtil.generateAccessToken(username);
-	    String newRefreshToken = jwtUtil.generateRefreshToken(username);
+		String username = jwtUtil.extractUsername(refreshToken);
+		String newAccessToken = jwtUtil.generateAccessToken(username);
+		String newRefreshToken = jwtUtil.generateRefreshToken(username);
 
-	    sessionService.createOrUpdateSession(username, newRefreshToken);
+		sessionService.createOrUpdateSession(username, newRefreshToken);
 
-	    Cookie cookie = new Cookie("refreshToken", newRefreshToken);
-	    cookie.setHttpOnly(true);
-	    cookie.setSecure(true);
-	    cookie.setPath("/");
-	    cookie.setMaxAge(60 * 60 * 24); 
-	    response.addCookie(cookie);
+		Cookie cookie = new Cookie("refreshToken", newRefreshToken);
+		cookie.setHttpOnly(true);
+		cookie.setSecure(true);
+		cookie.setPath("/");
+		cookie.setMaxAge(60 * 60 * 24);
+		response.addCookie(cookie);
 
-	    return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
+		return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
 	}
-
 
 	@PostMapping("/logout")
 	public ResponseEntity<Map<String, String>> logOut(@RequestBody Map<String, String> request)
@@ -205,13 +163,15 @@ public class EmployeeController
 	@PostMapping("/empl")
 	public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee)
 	{
+        log.info("Creating new employee");
 		Employee saveEmployee = employeeRepository.save(employee);
 		return new ResponseEntity<>(saveEmployee, HttpStatus.CREATED);
 	}
 
 	@GetMapping("/employees")
-	public List<Employee> gelAllEmployee()//9.15
+	public List<Employee> gelAllEmployee()
 	{
+        log.info("Fetching all employees");
 		return employeeRepository.findAll();
 	}
 
@@ -240,15 +200,18 @@ public class EmployeeController
 	@DeleteMapping("/employees/{id}")
 	public ResponseEntity<Employee> deleteEmployee(@PathVariable Integer id)
 	{
+        log.warn("Deleting employee with ID: {}", id);
 		Optional<Employee> optionalEmployee = employeeRepository.findById(id);
 
 		if (optionalEmployee.isPresent())
 		{
 			Employee employee = optionalEmployee.get();
 			employeeRepository.deleteById(id);
+            log.info("Employee deleted successfully with ID: {}", id);
 			return ResponseEntity.ok(employee);
 		} else
 		{
+            log.error("Attempt to delete non-existing employee with ID: {}", id);
 			return ResponseEntity.notFound().build();
 		}
 	}
@@ -262,35 +225,71 @@ public class EmployeeController
 		if (userOpt.isPresent())
 		{
 			response.put("message", "username is exist");
+			log.info("Username is exist");
 			return ResponseEntity.ok(response);
 		} else
 		{
+			log.warn("Username not found");
 			response.put("message", "username is not found");
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-
 		}
 	}
 
 	@PostMapping("/forgot-password/reset")
 	public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> request)
 	{
-		String username = request.get("username");
+		log.info("Reset link sending..");
+		String token = request.get("token");
 		String newPassword = request.get("password");
-		Map<String, String> response = new HashMap<String, String>();
+
+		String username;
+		try
+		{
+			username = jwtUtil.extractUsername(token);
+		}
+		catch (Exception e)
+		{
+			log.warn("Invalid token...");
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Invalid or expired token"));
+		}
+
 		Optional<MyUser> userOpt = userRepository.findByusername(username);
 		if (userOpt.isPresent())
 		{
 			MyUser user = userOpt.get();
 			user.setPassword(passwordEncoder.encode(newPassword));
 			userRepository.save(user);
-			response.put("message", "Password updated successfully");
-			return ResponseEntity.ok(response);
-		} 
-		else
+			return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
+		} else
 		{
-			response.put("message", "username is not found");
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
 		}
+	}
+
+	@PostMapping("/forgot-password/send-link")
+	public ResponseEntity<Map<String, String>> resetPasswordLink(@RequestBody Map<String, String> request)
+	{
+		String username = request.get("username");
+
+		Optional<MyUser> userDetails = userRepository.findByusername(username);
+
+		if (userDetails.isPresent())
+		{
+			MyUser myUser = userDetails.get();
+			String email = myUser.getEmail();
+			System.out.println("email:" + email);
+			if (email == null || !email.contains("@"))
+			{
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid email for user"));
+			}
+
+			String token = jwtUtil.generateAccessToken(username);
+			String resetLink = "http://localhost:4200/forgot-password?token=" + token;
+			emailService.sendForgotPasMailLink(email, resetLink);
+
+			return ResponseEntity.ok(Map.of("message", "Reset link sent to email"));
+		}
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Invalid token"));
 	}
 
 }
