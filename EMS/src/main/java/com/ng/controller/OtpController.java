@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200")
-@RequestMapping("/api/v1/otp")
+@RequestMapping("/api/v1/otp/")
 public class OtpController
 {
 
@@ -38,7 +38,7 @@ public class OtpController
 	public ResponseEntity<Map<String, String>> verifyEmailOtp(@RequestBody Map<String, String> request)
 	{
 		String email = request.get("email");
-		String otp = request.get("otp");
+		String otp = request.get("emailotp");
 System.out.println("email|otp" + email + "|"+ otp);
 		boolean isValid = otpService.verifyEmailOtp(email, otp);
 
