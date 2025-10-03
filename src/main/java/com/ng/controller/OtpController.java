@@ -25,7 +25,6 @@ public class OtpController
 	@Autowired
 	UserRepository repository;
 
-	// ---------- EMAIL OTP ----------
 	@PostMapping("/send-email")
 	public ResponseEntity<Map<String, String>> sendEmailOtp(@RequestBody Map<String, String> request)
 	{
@@ -64,15 +63,14 @@ public class OtpController
 		}
 	}
 
-	// ---------- PHONE OTP ----------
 	@PostMapping("/send-phone")
 	public ResponseEntity<Map<String, String>> sendPhoneOtp(@RequestBody Map<String, String> request)
 	{
 		String number = request.get("phone");
-		otpService.sendOtpToPhone(number); // currently printing OTP in console
+		String otp = otpService.sendOtpToPhone(number);
 
 		return ResponseEntity
-				.ok(Map.of("status", "success", "message", "OTP sent successfully to phone", "phone", number));
+				.ok(Map.of("status", "success", "message", "OTP sent successfully to phone", "phone", number, "otp", otp));
 	}
 
 	@PostMapping("/verify-phone")

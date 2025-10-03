@@ -15,7 +15,7 @@ public class OtpService
 	private final Map<String, OtpData> emailOtpStore = new ConcurrentHashMap<>();
 
 	// ---------- PHONE OTP ----------
-	public void sendOtpToPhone(String phone)
+	public String sendOtpToPhone(String phone)
 	{
 		phone = normalizePhone(phone);
 		String otp = generateSixDigitOtp();
@@ -28,7 +28,7 @@ public class OtpService
 		{
 			System.out.println("otp is null");
 		}
-	
+	return otp;
 	
 	}
 

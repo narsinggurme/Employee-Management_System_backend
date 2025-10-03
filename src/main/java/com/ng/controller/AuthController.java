@@ -50,6 +50,7 @@ public class AuthController
 		System.out.println("roles: " + user.getRoles());
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
 		user.setRoles(user.getRoles());
+		user.setEmail(user.getEmail());
 		MyUser savedUser = userRepository.save(user);
 		return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
 	}
@@ -85,7 +86,7 @@ public class AuthController
 				Map<String, Object> resp = new HashMap<>();
 				resp.put("accessToken", accessToken);
 				resp.put("username", user.getUsername());
-				resp.put("roles", user.getRoles());
+				resp.put("role", user.getRoles());
 				resp.put("expiresIn", jwtUtil.getExpiration(accessToken));
 
 				return ResponseEntity.ok(resp);

@@ -20,10 +20,19 @@ public class MyUser
 	private String password;
 	private String email;
 	private String roles;
+	private String phone;
 
 	public String getRoles()
 	{
 		return roles;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
 	}
 
 	public void setRoles(String roles)
