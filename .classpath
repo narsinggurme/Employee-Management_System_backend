@@ -36,5 +36,14 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/narsi/.m2/repository/com/zaxxer/HikariCP/6.3.2/HikariCP-6.3.2.jar" sourcepath="C:/Users/narsi/.m2/repository/com/zaxxer/HikariCP/6.3.2/HikariCP-6.3.2-sources.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="com.zaxxer"/>
+			<attribute name="maven.artifactId" value="HikariCP"/>
+			<attribute name="maven.version" value="6.3.2"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

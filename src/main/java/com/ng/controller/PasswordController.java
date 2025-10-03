@@ -90,7 +90,8 @@ public class PasswordController
 			}
 
 			String token = jwtUtil.generateAccessToken(username);
-			String resetLink = "http://localhost:4200/forgot-password?token=" + token;
+//			String resetLink = "http://localhost:4200/forgot-password?token=" + token;
+			String resetLink = "https://emsappbynarsing.netlify.app/forgot-password?token=" + token;
 			emailService.sendForgotPasMailLink(email, resetLink);
 
 			return ResponseEntity.ok(Map.of("message", "Reset link sent to email"));

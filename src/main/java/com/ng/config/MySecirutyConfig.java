@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -35,6 +36,7 @@ public class MySecirutyConfig
 	{
 		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(corsConfigurationSource()))
 				.authorizeHttpRequests(auth -> auth
+					    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
 						.requestMatchers("/api/v1/auth/**", "/api/v1/password/forgot-password/**", "/api/v1/otp/**")
 						.permitAll().requestMatchers("/api/v1/employees").hasRole("ADMIN").requestMatchers("/api/v1/**")
 						.authenticated())
@@ -48,8 +50,10 @@ public class MySecirutyConfig
 	public CorsConfigurationSource corsConfigurationSource()
 	{
 		CorsConfiguration configuration = new CorsConfiguration();
-//		configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-	    configuration.setAllowedOrigins(List.of("*"));
+		 configuration.setAllowedOrigins(List.of(
+			        "http://localhost:4200", 
+			        "https://emsappbynarsing.netlify.app"
+			    ));
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
