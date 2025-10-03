@@ -1,5 +1,6 @@
 package com.ng.controller;
 
+import com.ng.repository.UserRepository;
 import com.ng.service.EmailService;
 import com.ng.service.OtpService;
 
@@ -21,12 +22,22 @@ public class OtpController
 	@Autowired
 	private EmailService emailService;
 
+	@Autowired
+	UserRepository repository;
+
 	// ---------- EMAIL OTP ----------
 	@PostMapping("/send-email")
 	public ResponseEntity<Map<String, String>> sendEmailOtp(@RequestBody Map<String, String> request)
 	{
 		String email = request.get("email");
 		System.out.println("api email: " + email);
+
+		if (repository.existsByEmail(email))
+		{
+			return ResponseEntity.ok(Map.of("status", "error", "message",
+					"Email already registered. Please use another email.", "email", email));
+		}
+
 		String otp = otpService.generateEmailOtp(email);
 		emailService.sendOtpMail(email, otp);
 
@@ -39,7 +50,7 @@ public class OtpController
 	{
 		String email = request.get("email");
 		String otp = request.get("emailotp");
-System.out.println("email|otp" + email + "|"+ otp);
+		System.out.println("email|otp" + email + "|" + otp);
 		boolean isValid = otpService.verifyEmailOtp(email, otp);
 
 		if (isValid)

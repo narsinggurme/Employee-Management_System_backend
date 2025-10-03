@@ -12,4 +12,5 @@ import com.ng.entity.MyUser;
 public interface UserRepository extends JpaRepository<MyUser, Integer>
 {
 	Optional<MyUser> findByusername(String username);
+	boolean  existsByEmail(String email);
 }

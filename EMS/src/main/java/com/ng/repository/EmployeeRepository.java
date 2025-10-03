@@ -9,5 +9,7 @@ import com.ng.entity.Employee;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Integer>
 {
+	boolean existsByEmail(String email);
+	boolean existsByPhone(String phone);
 
 }

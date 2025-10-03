@@ -65,7 +65,8 @@ public class PasswordController
 			user.setPassword(passwordEncoder.encode(newPassword));
 			userRepository.save(user);
 			return ResponseEntity.ok(Map.of("message", "Password updated successfully"));
-		} else
+		} 
+		else
 		{
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
 		}
@@ -95,7 +96,10 @@ public class PasswordController
 			return ResponseEntity.ok(Map.of("message", "Reset link sent to email"));
 		}
 		else
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Invalid token"));
+		{
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User Not Found.."));
+
+		}
 	}
 	
 	@PostMapping("/forgot-password/check-username")
