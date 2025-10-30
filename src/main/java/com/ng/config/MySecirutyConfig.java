@@ -50,8 +50,6 @@ public class MySecirutyConfig
 	public CorsConfigurationSource corsConfigurationSource()
 	{
 		CorsConfiguration configuration = new CorsConfiguration();
-//		configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-
 		 configuration.setAllowedOrigins(List.of( 
 			        "http://localhost:4200", 
 			        "https://emsappbynarsing.netlify.app"
